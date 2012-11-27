@@ -1,17 +1,17 @@
-# Object files
 *.o
-
-# Libraries
 *.lib
 *.a
-
-# Shared objects (inc. Windows DLLs)
 *.dll
 *.so
 *.so.*
 *.dylib
-
-# Executables
 *.exe
 *.out
+*.cache
 *.app
+Makefile
+src/Makefile
+test/Makefile
+config.h
+config.status
+
