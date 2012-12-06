@@ -13,5 +13,6 @@ Makefile
 src/Makefile
 test/Makefile
 config.h
+config.log
 config.status
 
