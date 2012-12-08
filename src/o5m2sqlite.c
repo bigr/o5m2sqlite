@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
 	
 	sqlite3_exec(db,
 		"CREATE TABLE polygon AS "
-		"SELECT id,BuildArea(geom) AS geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) "
+		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) "
 		"UNION "
 		"SELECT * FROM ( "
 		"SELECT rel_id,Collect(geom) AS geom,1 AS is_rel FROM "
