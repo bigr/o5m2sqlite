@@ -15,4 +15,12 @@ test/Makefile
 config.h
 config.log
 config.status
+config.log
+.deps
+/src/.deps
+app.info
+/build*/
+m4
+stamp-h1
+/src/o5m2sqlite
 
