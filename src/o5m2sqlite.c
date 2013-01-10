@@ -260,19 +260,6 @@ int main(int argc, char **argv) {
 		"  JOIN tag T ON T.id = RT.tag_id "
 	,0,0,0);
 	
-	
-	sqlite3_exec(db,
-		"CREATE TABLE polygon AS "
-		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) "
-		"UNION "
-		"SELECT * FROM ( "
-		"SELECT rel_id,Collect(geom) AS geom,1 AS is_rel FROM "
-		"(SELECT rel_id,LineMerge(Collect(geom)) AS geom,object FROM rel_outer RO "
-		"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) "
-		"GROUP BY rel_id, object) "
-		"GROUP BY rel_id)"	
-	,0,0,0);
-	
 					
 	//sqlite3_exec(db, "SELECT CreateSpatialIndex('node', 'geom');",0,0,0);
 	//sqlite3_exec(db, "SELECT CreateSpatialIndex('way', 'geom');",0,0,0);
@@ -545,7 +532,19 @@ int main(int argc, char **argv) {
 		
 		
 	}				
-	
+
+	sqlite3_exec(db,
+		"CREATE TABLE polygon AS "
+		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) "
+		"UNION "
+		"SELECT * FROM ( "
+		"SELECT rel_id,Collect(geom) AS geom,1 AS is_rel FROM "
+		"(SELECT rel_id,LineMerge(Collect(geom)) AS geom,object FROM rel_outer RO "
+		"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) "
+		"GROUP BY rel_id, object) "
+		"GROUP BY rel_id)"	
+	,0,0,0);
+
 	sqlite3_exec(db,"COMMIT TRANSACTION",0,0,0);	
 	sqlite3_exec(db, "VACUUM",0,0,0);
 	sqlite3_finalize(outerStmt);
