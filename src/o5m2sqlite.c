@@ -258,12 +258,11 @@ int main(int argc, char **argv) {
 		"  SELECT RT.rel_id AS id, T.key AS k,T.value AS v "
 		"  FROM rel_tag RT "
 		"  JOIN tag T ON T.id = RT.tag_id "
+
 	,0,0,0);
 	
-					
 	//sqlite3_exec(db, "SELECT CreateSpatialIndex('node', 'geom');",0,0,0);
-	//sqlite3_exec(db, "SELECT CreateSpatialIndex('way', 'geom');",0,0,0);
-	
+	//sqlite3_exec(db, "SELECT CreateSpatialIndex('way', 'geom');",0,0,0);	
 	
 	
 	sqlite3_exec(db, "BEGIN TRANSACTION",0,0,0);	
