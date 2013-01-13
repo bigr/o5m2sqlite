@@ -67,15 +67,15 @@ void Group_append(Segmenter_Group *pGroup, uint64_t  end,uint64_t id) {
 	pGroup->ids[pGroup->idsCount-1] = id;
 }
 
-void Group_appendGroup(Segmenter_Group *dest, Segmenter_Group *src) {	
-	dest->start = src->start;
+void Group_appendGroup(Segmenter_Group *dest, Segmenter_Group *src) {		
+	dest->end = src->end;
 	dest->idsCount += src->idsCount;
 	dest->ids = realloc(dest->ids, sizeof(uint64_t)*dest->idsCount);
 	memcpy(dest->ids + dest->idsCount - src->idsCount,src->ids,sizeof(uint64_t)*src->idsCount);
 }
 
 
-void Groups_insertWay(Segmenter_Groups *pGroups, uint64_t start, uint64_t  end,uint64_t id) {
+void Groups_insertWay(Segmenter_Groups *pGroups, uint64_t start, uint64_t  end,uint64_t id) {	
 	Segmenter_Group* currentGroup = 0;
 	unsigned int i;
 	for ( i = 0; i < pGroups->groupsCount; ++i ) {	
@@ -85,14 +85,17 @@ void Groups_insertWay(Segmenter_Groups *pGroups, uint64_t start, uint64_t  end,u
 			break;
 		}
 	}	
-	if ( !currentGroup ) {
+	if ( !currentGroup ) {		
 		currentGroup = Groups_addNew(pGroups, start, end, id);		
 	}	
 	for ( i = 0; i < pGroups->groupsCount; ++i ) {	
-		if ( currentGroup->start == pGroups->groups[i]->end && pGroups->groups[i] != currentGroup ) {
+		//printf("%lld %lld -- %lld %lld\n",currentGroup->start,currentGroup->end,pGroups->groups[i]->start,pGroups->groups[i]->end);		
+		if ( currentGroup->end == pGroups->groups[i]->start && pGroups->groups[i] != currentGroup ) {
 			Group_appendGroup(currentGroup,pGroups->groups[i]);
+			//printf("%lld %lld\n",currentGroup->start,currentGroup->end);		
 			Groups_remove(pGroups,i);
 			break;
-		}
+		}		
 	}	
+	//printf("\n\n");
 }
