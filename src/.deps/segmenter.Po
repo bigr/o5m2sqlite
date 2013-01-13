@@ -1,12 +1,12 @@
 segmenter.o: segmenter.c segmenter.h \
- /usr/lib/gcc/i486-linux-gnu/4.6/include/stdint.h /usr/include/stdint.h \
+ /usr/lib/gcc/i486-linux-gnu/4.7/include/stdint.h /usr/include/stdint.h \
  /usr/include/features.h /usr/include/i386-linux-gnu/bits/predefs.h \
  /usr/include/i386-linux-gnu/sys/cdefs.h \
  /usr/include/i386-linux-gnu/bits/wordsize.h \
  /usr/include/i386-linux-gnu/gnu/stubs.h \
  /usr/include/i386-linux-gnu/gnu/stubs-32.h \
  /usr/include/i386-linux-gnu/bits/wchar.h /usr/include/stdlib.h \
- /usr/lib/gcc/i486-linux-gnu/4.6/include/stddef.h \
+ /usr/lib/gcc/i486-linux-gnu/4.7/include/stddef.h \
  /usr/include/i386-linux-gnu/bits/waitflags.h \
  /usr/include/i386-linux-gnu/bits/waitstatus.h /usr/include/endian.h \
  /usr/include/i386-linux-gnu/bits/endian.h \
@@ -26,7 +26,7 @@ segmenter.o: segmenter.c segmenter.h \
 
 segmenter.h:
 
-/usr/lib/gcc/i486-linux-gnu/4.6/include/stdint.h:
+/usr/lib/gcc/i486-linux-gnu/4.7/include/stdint.h:
 
 /usr/include/stdint.h:
 
@@ -46,7 +46,7 @@ segmenter.h:
 
 /usr/include/stdlib.h:
 
-/usr/lib/gcc/i486-linux-gnu/4.6/include/stddef.h:
+/usr/lib/gcc/i486-linux-gnu/4.7/include/stddef.h:
 
 /usr/include/i386-linux-gnu/bits/waitflags.h:
 

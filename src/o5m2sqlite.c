@@ -541,8 +541,9 @@ int main(int argc, char **argv) {
 		"SELECT * FROM ( "
 		"SELECT rel_id,Collect(geom) AS geom,1 AS is_rel FROM "
 		"(SELECT rel_id,LineMerge(Collect(geom)) AS geom,object FROM rel_outer RO "
-		"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) "
-		"GROUP BY rel_id, object) "
+		"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) "		
+		"GROUP BY rel_id, object "
+		"ORDER BY segment) "
 		"GROUP BY rel_id)"	
 	,0,0,0);
 
