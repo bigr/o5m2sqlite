@@ -84,13 +84,18 @@ void Groups_insertWay(Segmenter_Groups *pGroups, uint64_t start, uint64_t  end,u
 			currentGroup = pGroups->groups[i];			
 			break;
 		}
+		else if ( end == pGroups->groups[i]->end ) {
+			Group_append(pGroups->groups[i],start,id);
+			currentGroup = pGroups->groups[i];			
+			break;
+		}
 	}	
 	if ( !currentGroup ) {		
 		currentGroup = Groups_addNew(pGroups, start, end, id);		
 	}	
 	for ( i = 0; i < pGroups->groupsCount; ++i ) {	
 		//printf("%lld %lld -- %lld %lld\n",currentGroup->start,currentGroup->end,pGroups->groups[i]->start,pGroups->groups[i]->end);		
-		if ( currentGroup->end == pGroups->groups[i]->start && pGroups->groups[i] != currentGroup ) {
+		if ( ( currentGroup->end == pGroups->groups[i]->start || currentGroup->start == pGroups->groups[i]->start ) && pGroups->groups[i] != currentGroup ) {
 			Group_appendGroup(currentGroup,pGroups->groups[i]);
 			//printf("%lld %lld\n",currentGroup->start,currentGroup->end);		
 			Groups_remove(pGroups,i);
