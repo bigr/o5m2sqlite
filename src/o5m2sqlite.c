@@ -536,12 +536,12 @@ int main(int argc, char **argv) {
 
 	sqlite3_exec(db,
 		"CREATE TABLE polygon AS "
-		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) "
+		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) AND NumPoints(W.geom) > 3 "
 		"UNION "
 		"SELECT * FROM ( "
 		"SELECT rel_id,Collect(geom) AS geom,1 AS is_rel FROM "
 		"(SELECT rel_id,LineMerge(Collect(geom)) AS geom,object FROM rel_outer RO "
-		"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) "		
+		"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) AND NumPoints(W.geom) > 1 "		
 		"GROUP BY rel_id, object "
 		"ORDER BY segment) "
 		"GROUP BY rel_id)"	
