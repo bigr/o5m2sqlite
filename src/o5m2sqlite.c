@@ -109,6 +109,8 @@ int main(int argc, char **argv) {
 	
 	int64_t wayNodeId;
 	int64_t refId;
+	
+	int32_t oldLon,oldLat;
 		
 	int i, j, jj;	
 	struct NodeCache *nodeCacheItem;
@@ -358,7 +360,8 @@ int main(int argc, char **argv) {
 				wayCacheItem->start = 0;
 				wayCacheItem->end = 0;
 				
-				first = 1;				
+				first = 1;	
+							
 				while ( o5mreader_iterateNds(reader, &wayNodeId) != O5MREADER_ITERATE_RET_DONE ) {
 					if ( first ) {
 						wayCacheItem->start = wayNodeId;
@@ -368,9 +371,14 @@ int main(int argc, char **argv) {
 					HASH_FIND_INT(nodeCache, &wayNodeId, nodeCacheItem);
 					
 					if ( nodeCacheItem ) {
-						waypoints[j++] = nodeCacheItem->lon;
-						waypoints[j++] = nodeCacheItem->lat;
+						if ( j == 0 || !( oldLon == nodeCacheItem->lon && oldLat == nodeCacheItem->lat ) ) {
+							waypoints[j++] = nodeCacheItem->lon;
+							waypoints[j++] = nodeCacheItem->lat;
+						}
 					}
+					
+					oldLon = nodeCacheItem->lon;
+					oldLat = nodeCacheItem->lat;
 				}
 				
 				if ( j/2 >= 2 ) {			
@@ -454,7 +462,7 @@ int main(int argc, char **argv) {
 								if ( wayCacheItem ) {
 									Groups_insertWay(&outer,wayCacheItem->start,wayCacheItem->end,wayCacheItem->id);									
 								}
-							}							
+							}
 							if ( 0 == strcmp(role,"inner") || 0 == strcmp(role,"inclave") ) {
 								HASH_FIND_INT(wayCache, &refId, wayCacheItem);
 								if ( wayCacheItem ) {
