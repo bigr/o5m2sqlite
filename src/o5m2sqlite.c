@@ -21,6 +21,8 @@
 #include <spatialite/gaiageo.h>    
 
 
+#pragma pack(push)
+#pragma pack(1)
 struct NodeCache {
     int64_t id; 
     int32_t lon;
@@ -29,11 +31,25 @@ struct NodeCache {
 };
 
 struct WayCache {
-    int64_t id; 
-    int64_t start;
-    int64_t end;
+    int64_t id;
+    union {
+		int64_t from;
+		struct {
+			int32_t lon;
+			int32_t lat;
+		} fromLL;
+	};
+	union {
+		int64_t to;
+		struct {
+			int32_t lon;
+			int32_t lat;
+		} toLL;
+	};
+    
     UT_hash_handle hh;
 };
+#pragma pack(pop)
 
 void delete_nodeCache(struct NodeCache* nodeCache) {
   struct NodeCache *nodeCacheItem, *tmp;
@@ -357,35 +373,40 @@ int main(int argc, char **argv) {
 				
 				wayCacheItem = malloc(sizeof(struct WayCache));
 				wayCacheItem->id = ds.id;
-				wayCacheItem->start = 0;
-				wayCacheItem->end = 0;
+				wayCacheItem->from = 0LL;				
+				wayCacheItem->to = 0LL;				
 				
 				first = 1;	
 							
 				while ( o5mreader_iterateNds(reader, &wayNodeId) != O5MREADER_ITERATE_RET_DONE ) {
+					HASH_FIND_INT(nodeCache, &wayNodeId, nodeCacheItem);
 					if ( first ) {
-						wayCacheItem->start = wayNodeId;
+						wayCacheItem->fromLL.lon = nodeCacheItem->lon;
+						wayCacheItem->fromLL.lat = nodeCacheItem->lat;			
 						first = 0;
 					}
 					
-					HASH_FIND_INT(nodeCache, &wayNodeId, nodeCacheItem);
-					
 					if ( nodeCacheItem ) {
-						if ( j == 0 || !( oldLon == nodeCacheItem->lon && oldLat == nodeCacheItem->lat ) ) {
+						if ( j == 0 || ( oldLon != nodeCacheItem->lon || oldLat != nodeCacheItem->lat ) ) {
 							waypoints[j++] = nodeCacheItem->lon;
 							waypoints[j++] = nodeCacheItem->lat;
-						}
+							
+						}						
+						
 					}
 					
 					oldLon = nodeCacheItem->lon;
 					oldLat = nodeCacheItem->lat;
+					//printf(".");
 				}
-				
+				//printf("%d: %d - ",j,ds.id);
 				if ( j/2 >= 2 ) {			
-					wayCacheItem->end = wayNodeId;				
+					//printf("%d\n",wayNodeId);
+					wayCacheItem->toLL.lon = nodeCacheItem->lon;
+					wayCacheItem->toLL.lat = nodeCacheItem->lat;		
+								
 					HASH_ADD_INT( wayCache, id, wayCacheItem );	
-					
-									
+																			
 					linestring = gaiaAllocLinestring(j/2);
 					for ( jj = 0; jj < j/2; ++jj ) {
 						gaiaSetPoint(linestring->Coords,jj,(double)waypoints[2*jj]*1E-07,(double)waypoints[2*jj+1]*1E-07);
@@ -406,7 +427,7 @@ int main(int argc, char **argv) {
 					gaiaToSpatiaLiteBlobWkb(geom,&blob,&blob_size);
 					
 					sqlite3_bind_blob(wayStmt, 2, blob,blob_size,free);
-					sqlite3_bind_int(wayStmt, 3, wayCacheItem->end == wayCacheItem->start && j/2 >= 4);
+					sqlite3_bind_int(wayStmt, 3, wayCacheItem->to == wayCacheItem->from && j/2 >= 4);
 					
 					gaiaFreeGeomColl(geom);
 					//gaiaFreeLinestring(linestring);
@@ -419,7 +440,8 @@ int main(int argc, char **argv) {
 					if ( ++ways % 5000 == 0) {
 						printf("Nodes %lldK  Ways %lldK  Rels %lld        \r",nodes/1000,ways/1000,rels);
 						fflush(stdout);					
-					}
+					}					
+					//printf("to: %d - %d\n",ds.id,wayCacheItem->to);					
 				}
 				else {
 					free(wayCacheItem);
@@ -456,17 +478,19 @@ int main(int argc, char **argv) {
 						case O5MREADER_DS_NODE:
 							stmt = insertRelNodeStmt;
 							break;
-						case O5MREADER_DS_WAY:							
-							if ( 0 == strcmp(role,"outer") || 0 == strcmp(role,"exclave") ) {
+						case O5MREADER_DS_WAY:
+							if ( 0 == strcmp(role,"outer") || 0 == strcmp(role,"exclave") ) {								
+								wayCacheItem = NULL;
 								HASH_FIND_INT(wayCache, &refId, wayCacheItem);
-								if ( wayCacheItem ) {
-									Groups_insertWay(&outer,wayCacheItem->start,wayCacheItem->end,wayCacheItem->id);									
+								if ( wayCacheItem ) {									
+									//printf("%lld: [%d,%d] - [%d,%d]\n",wayCacheItem->id,wayCacheItem->fromLL.lon,wayCacheItem->fromLL.lat,wayCacheItem->toLL.lon,wayCacheItem->toLL.lat);
+									Groups_insertWay(&outer,wayCacheItem->from,wayCacheItem->to,wayCacheItem->id);									
 								}
 							}
 							if ( 0 == strcmp(role,"inner") || 0 == strcmp(role,"inclave") ) {
 								HASH_FIND_INT(wayCache, &refId, wayCacheItem);
 								if ( wayCacheItem ) {
-									Groups_insertWay(&inner,wayCacheItem->start,wayCacheItem->end,wayCacheItem->id);									
+									Groups_insertWay(&inner,wayCacheItem->from,wayCacheItem->to,wayCacheItem->id);									
 								}
 							}
 							
@@ -487,8 +511,7 @@ int main(int argc, char **argv) {
 					}
 					sqlite3_reset(stmt);
 					
-				}
-								
+				}								
 
 				for ( i = 0; i < outer.groupsCount; ++i ) {
 					for ( j = 0; j < outer.groups[i]->idsCount; ++j ) {							
@@ -540,23 +563,34 @@ int main(int argc, char **argv) {
 		
 	}				
 
-	if ( argc > 2 && argv[2] == 'notfinal' ) {
+	if ( argc > 3 && strcmp(argv[3],"notfinal") == 0 ) {
 	}
 	else {
 
 		sqlite3_exec(db,"DROP TABLE polygon",0,0,0);
 
-		sqlite3_exec(db,
-			"CREATE TABLE polygon AS "
-			"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) AND NumPoints(geom) > 3 "
-			"UNION "
-			"SELECT * FROM ( "
-			"SELECT rel_id,Collect(geom) AS geom,1 AS is_rel FROM "
-			"(SELECT rel_id,LineMerge(Collect(geom)) AS geom,object FROM rel_outer RO "
-			"JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) AND NumPoints(W.geom) > 1 "		
-			"GROUP BY rel_id, object "
-			"ORDER BY segment) "
-			"GROUP BY rel_id)"	
+		sqlite3_exec(db,		
+		"CREATE TABLE polygon AS "
+		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) AND NumPoints(geom) > 3 "
+		"UNION "
+		"SELECT id,(CASE WHEN inner IS NULL THEN outer ELSE Difference(outer,inner) END) AS geom,is_rel FROM ( "
+		"SELECT R.id, "		
+		"  (SELECT Collect(geom) AS geom FROM "
+		"	(SELECT Coalesce(Polygonize(geom),LineMerge(Collect(geom)),Collect(geom)) AS geom FROM rel_outer RO "
+		"	JOIN way W ON W.id = RO.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) AND NumPoints(W.geom) > 1 "
+		"	WHERE RO.rel_id = R.id "
+		"	GROUP BY rel_id, object "
+		"	ORDER BY segment) "
+		" ) AS outer, "
+		"  (SELECT Coalesce(Polygonize(geom),LineMerge(Collect(geom)),Collect(geom)) AS geom FROM "
+		"	(SELECT Polygonize(geom) AS geom FROM rel_inner RI "
+		"	JOIN way W ON W.id = RI.way_id AND IsValid(W.geom) AND NOT IsEmpty(W.geom) AND NumPoints(W.geom) > 1 "
+		"	WHERE RI.rel_id = R.id "
+		"	GROUP BY rel_id, object "
+		"	ORDER BY segment) "
+		"  ) AS inner, "
+		"  1 AS is_rel  "
+		"FROM rel R) "
 		,0,0,0);
 	}
 

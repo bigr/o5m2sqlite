@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <memory.h>
+#include <stdio.h>
 
 void Groups_init(Segmenter_Groups *pGroups) {
 	pGroups->groupsCount = 0;
@@ -58,13 +59,24 @@ void Groups_remove(Segmenter_Groups *pGroups, unsigned int i) {
 	}	
 }
 
-
-
 void Group_append(Segmenter_Group *pGroup, uint64_t  end,uint64_t id) {		
 	pGroup->end = end;
 	++pGroup->idsCount;	
 	pGroup->ids = realloc(pGroup->ids, sizeof(uint64_t)*pGroup->idsCount);	
 	pGroup->ids[pGroup->idsCount-1] = id;
+}
+
+void Group_reverse(Segmenter_Group *pGroup) {
+	unsigned int i;
+	uint64_t tmp;
+	for ( i = 0; i < pGroup->idsCount/2; ++i ) {
+		tmp = pGroup->ids[i];
+		pGroup->ids[i] = pGroup->ids[pGroup->idsCount-i-1];
+		pGroup->ids[pGroup->idsCount-i-1] = tmp;
+	}
+	tmp = pGroup->start;
+	pGroup->start = pGroup->end;
+	pGroup->end = tmp;
 }
 
 void Group_appendGroup(Segmenter_Group *dest, Segmenter_Group *src) {		
@@ -74,6 +86,25 @@ void Group_appendGroup(Segmenter_Group *dest, Segmenter_Group *src) {
 	memcpy(dest->ids + dest->idsCount - src->idsCount,src->ids,sizeof(uint64_t)*src->idsCount);
 }
 
+void Groups_connect(Segmenter_Groups *pGroups) {
+	unsigned int i,j;
+	for ( j = 0; j < pGroups->groupsCount; ++j ) {	
+		for ( i = 0; i < pGroups->groupsCount; ++i ) {
+			if ( i == j ) continue;			
+			if ( ( pGroups->groups[j]->end == pGroups->groups[i]->start || pGroups->groups[j]->start == pGroups->groups[i]->start ) ) {	
+				if ( pGroups->groups[j]->start == pGroups->groups[i]->start ) {
+					Group_reverse(pGroups->groups[j]);				
+				}
+				
+				Group_appendGroup(pGroups->groups[j],pGroups->groups[i]);
+				
+				Groups_remove(pGroups,i);
+				Groups_connect(pGroups);
+				return;
+			}		
+		}
+	}
+}
 
 void Groups_insertWay(Segmenter_Groups *pGroups, uint64_t start, uint64_t  end,uint64_t id) {	
 	Segmenter_Group* currentGroup = 0;
@@ -86,21 +117,14 @@ void Groups_insertWay(Segmenter_Groups *pGroups, uint64_t start, uint64_t  end,u
 		}
 		else if ( end == pGroups->groups[i]->end ) {
 			Group_append(pGroups->groups[i],start,id);
-			currentGroup = pGroups->groups[i];			
+			currentGroup = pGroups->groups[i];				
 			break;
-		}
+		}		
+		
 	}	
 	if ( !currentGroup ) {		
 		currentGroup = Groups_addNew(pGroups, start, end, id);		
 	}	
-	for ( i = 0; i < pGroups->groupsCount; ++i ) {	
-		//printf("%lld %lld -- %lld %lld\n",currentGroup->start,currentGroup->end,pGroups->groups[i]->start,pGroups->groups[i]->end);		
-		if ( ( currentGroup->end == pGroups->groups[i]->start || currentGroup->start == pGroups->groups[i]->start ) && pGroups->groups[i] != currentGroup ) {
-			Group_appendGroup(currentGroup,pGroups->groups[i]);
-			//printf("%lld %lld\n",currentGroup->start,currentGroup->end);		
-			Groups_remove(pGroups,i);
-			break;
-		}		
-	}	
-	//printf("\n\n");
+	
+	Groups_connect(pGroups);	
 }
