@@ -479,7 +479,7 @@ int main(int argc, char **argv) {
 							stmt = insertRelNodeStmt;
 							break;
 						case O5MREADER_DS_WAY:
-							if ( 0 == strcmp(role,"outer") || 0 == strcmp(role,"exclave") ) {								
+							if ( 0 == strcmp(role,"outer") || 0 == strcmp(role,"exclave") || 0 == strcmp(role,"") ) {								
 								wayCacheItem = NULL;
 								HASH_FIND_INT(wayCache, &refId, wayCacheItem);
 								if ( wayCacheItem ) {									
@@ -571,9 +571,9 @@ int main(int argc, char **argv) {
 
 		sqlite3_exec(db,		
 		"CREATE TABLE polygon AS "
-		"SELECT id,geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) AND NumPoints(geom) > 3 "
+		"SELECT id,BuildArea(geom) As geom,0 AS is_rel FROM way WHERE closed = 1 AND IsValid(geom) AND NOT IsEmpty(geom) AND NumPoints(geom) > 3 "
 		"UNION "
-		"SELECT id,(CASE WHEN inner IS NULL THEN outer ELSE Difference(outer,inner) END) AS geom,is_rel FROM ( "
+		"SELECT id,(CASE WHEN inner IS NULL OR NOT IsValid(inner) OR NOT IsValid(outer) THEN outer ELSE Difference(outer,inner) END) AS geom,is_rel FROM ( "
 		"SELECT R.id, "		
 		"  (SELECT Collect(geom) AS geom FROM "
 		"	(SELECT Coalesce(Polygonize(geom),LineMerge(Collect(geom)),Collect(geom)) AS geom FROM rel_outer RO "
@@ -592,6 +592,11 @@ int main(int argc, char **argv) {
 		"  1 AS is_rel  "
 		"FROM rel R) "
 		,0,0,0);
+		
+		//sqlite3_exec(db,"SELECT RecoverGeometryColumn('polygon','geom',4326,'GEOMETRY','XY');",0,0,0);
+		sqlite3_exec(db,"CREATE INDEX i__polygon__id ON polygon(id);",0,0,0);
+		//sqlite3_exec(db,"SELECT CreateSpatialIndex('polygon','geom');",0,0,0);
+		//sqlite3_exec(db,"SELECT RecoverSpatialIndex('polygon','geom');",0,0,0);
 	}
 
 	sqlite3_exec(db,"COMMIT TRANSACTION",0,0,0);	
